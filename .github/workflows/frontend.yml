@@ -1,0 +1,36 @@
+name: Discussion Ban JS
+
+on: [workflow_dispatch, push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: JS checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: yarn
+          cache-dependency-path: js/yarn.lock
+      - name: Enable the pinned Yarn version
+        run: corepack enable
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - name: Install PHP dependencies for core typings
+        run: composer install --no-interaction --prefer-dist
+        env:
+          COMPOSER_ROOT_VERSION: dev-2.x
+          COMPOSER_AUTH: ${{ format('{{"github-oauth":{{"github.com":"{0}"}}}}', github.token) }}
+      - name: Install JavaScript dependencies
+        run: yarn install --frozen-lockfile
+        working-directory: js
+      - name: Check formatting, types, and production builds
+        run: yarn format-check && yarn check-typings && yarn check-typings-coverage && yarn build-typings && yarn build
+        working-directory: js

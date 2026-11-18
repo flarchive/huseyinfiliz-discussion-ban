@@ -1,0 +1,21 @@
+name: Discussion Ban PHP
+
+on: [workflow_dispatch, push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    uses: flarum/framework/.github/workflows/REUSABLE_backend.yml@6f4e63540f569c685dc6d45777e84fdc7e90eeeb # 2.x
+
+  verify:
+    name: ${{ needs.run.result == 'skipped' && 'PHP checks skipped' || 'PHP checks' }}
+    if: always() && needs.run.result != 'skipped'
+    needs: run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful backend checks
+        env:
+          RESULT: ${{ needs.run.result }}
+        run: test "$RESULT" = success
